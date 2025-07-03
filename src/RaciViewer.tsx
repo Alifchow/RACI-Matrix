@@ -355,7 +355,24 @@ function DashboardSearch({
           {ROLE_ORDER.map((role) => (
             <div key={role} style={{ marginBottom: 8 }}>
               <RoleChip role={role} />{" "}
-              {groups[role].length > 0 ? groups[role].map((p) => highlightText(p, query)).join(", ") : <span style={{ color: "#aaa" }}>None</span>}
+              {groups[role].length > 0
+                ? groups[role].map((p, i) => {
+                    let display;
+                    if (typeof p === "string") {
+                      display = highlightText(p, query);
+                    } else if (typeof p === "object" && p !== null && "name" in p && typeof (p as any).name === "string") {
+                      display = highlightText((p as any).name, query);
+                    } else {
+                      display = highlightText(JSON.stringify(p), query);
+                    }
+                    return (
+                      <span key={i}>
+                        {display}
+                        {i < groups[role].length - 1 ? ", " : ""}
+                      </span>
+                    );
+                  })
+                : <span style={{ color: "#aaa" }}>None</span>}
             </div>
           ))}
         </div>
@@ -386,7 +403,24 @@ function DashboardSearch({
           {ROLE_ORDER.map((role) => (
             <div key={role} style={{ marginBottom: 8 }}>
               <RoleChip role={role} />{" "}
-              {groups[role].length > 0 ? groups[role].map((r) => highlightText(r, query)).join(", ") : <span style={{ color: "#aaa" }}>None</span>}
+              {groups[role].length > 0
+                ? groups[role].map((p, i) => {
+                    let display;
+                    if (typeof p === "string") {
+                      display = highlightText(p, query);
+                    } else if (typeof p === "object" && p !== null && "name" in p && typeof (p as any).name === "string") {
+                      display = highlightText((p as any).name, query);
+                    } else {
+                      display = highlightText(JSON.stringify(p), query);
+                    }
+                    return (
+                      <span key={i}>
+                        {display}
+                        {i < groups[role].length - 1 ? ", " : ""}
+                      </span>
+                    );
+                  })
+                : <span style={{ color: "#aaa" }}>None</span>}
             </div>
           ))}
         </div>
