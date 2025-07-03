@@ -49,7 +49,16 @@ function transform(rows: any[][]): [
     if (!responsibility) return;
     responsibilities.push(responsibility);
     persons.forEach((person, idx) => {
-      const role = row[idx + 1];
+      const rawRole = row[idx + 1];
+      const role = typeof rawRole === "string" ? rawRole.trim() : rawRole;
+      if (
+        role &&
+        typeof role === "string" &&
+        role.toUpperCase() === "N"
+      ) {
+        // Treat 'N' as Not Applicable: do not assign a role
+        return;
+      }
       if (role && ROLE_MAP[role as RoleKey]) {
         personToRes[person].push({ responsibility, role });
         if (!respToPerson[responsibility]) respToPerson[responsibility] = [];
@@ -60,12 +69,58 @@ function transform(rows: any[][]): [
   return [personToRes, respToPerson, persons, responsibilities];
 }
 
+// --- Modal for PIN entry ---
+function PinModal({ open, onClose, onSubmit, error }: { open: boolean; onClose: () => void; onSubmit: (pin: string) => void; error?: string }) {
+  const [pin, setPin] = React.useState("");
+  React.useEffect(() => { if (!open) setPin(""); }, [open]);
+  if (!open) return null;
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.18)", zIndex: 1000,
+      display: "flex", alignItems: "center", justifyContent: "center"
+    }}>
+      <div style={{ background: "#fff", borderRadius: 12, padding: 32, minWidth: 320, boxShadow: "0 4px 32px #0002", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, color: PRIMARY_COLOR }}>Enter PIN to Save</div>
+        <input
+          type="password"
+          value={pin}
+          onChange={e => setPin(e.target.value)}
+          placeholder="Enter PIN (e.g., 2025)"
+          style={{ fontSize: 18, padding: 10, borderRadius: 8, border: `2px solid ${PRIMARY_COLOR}33`, marginBottom: 16, width: "100%", textAlign: "center" }}
+          autoFocus
+          onKeyDown={e => { if (e.key === "Enter") onSubmit(pin); }}
+        />
+        {error && <div style={{ color: "#b71c1c", fontWeight: 600, marginBottom: 10 }}>{error}</div>}
+        <div style={{ display: "flex", gap: 12 }}>
+          <button
+            onClick={() => onSubmit(pin)}
+            style={{ background: PRIMARY_COLOR, color: "#fff", border: "none", borderRadius: 8, padding: "8px 24px", fontWeight: 700, fontSize: 16, cursor: "pointer" }}
+          >Save</button>
+          <button
+            onClick={onClose}
+            style={{ background: "#eee", color: PRIMARY_COLOR, border: "none", borderRadius: 8, padding: "8px 24px", fontWeight: 700, fontSize: 16, cursor: "pointer" }}
+          >Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getFullMatrix(matrix: any[][]) {
   if (!matrix || !matrix.length) return null;
   const header = matrix[0];
   return (
-    <div style={{ overflow: "auto", background: "#fff", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", padding: 16 }}>
-      <table style={{ minWidth: "100%", borderCollapse: "collapse", fontSize: 15 }}>
+    <div style={{
+      overflowX: "auto",
+      background: "#fff",
+      borderRadius: 16,
+      boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+      padding: 16,
+      maxWidth: 1000,
+      margin: "0 auto",
+      width: "100%"
+    }}>
+      <table style={{ minWidth: 600, width: "100%", borderCollapse: "collapse", fontSize: 15 }}>
         <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
           <tr>
             {header.map((cell, idx) => (
@@ -85,7 +140,7 @@ function getFullMatrix(matrix: any[][]) {
                   color: cell === "A" ? "#fff" : cell === "R" ? PRIMARY_COLOR : cell === "C" ? "#1976d2" : cell === "I" ? "#43a047" : undefined,
                   fontWeight: cell === "A" ? 700 : 500
                 }}>
-                  {ROLE_MAP[cell as RoleKey] || cell}
+                  {ROLE_MAP[cell as RoleKey] || (cell === undefined || cell === null || String(cell).trim() === "" || String(cell).trim().toUpperCase() === "N" ? "Not Applicable" : cell)}
                 </td>
               ))}
             </tr>
@@ -103,13 +158,16 @@ export default function RaciViewer() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [editedMatrix, setEditedMatrix] = useState<any[][] | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinError, setPinError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     async function loadMatrix() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(process.env.PUBLIC_URL + "/20250528OrderMonkey_RACI_Matrix.xlsx");
+        const res = await fetch(process.env.PUBLIC_URL + "/RACI.xlsx");
         if (!res.ok) throw new Error("File not found");
         const buffer = await res.arrayBuffer();
         const wb = XLSX.read(buffer, { type: "array" });
@@ -123,6 +181,22 @@ export default function RaciViewer() {
       setLoading(false);
     }
     loadMatrix();
+  }, []);
+
+  // Load edits from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("raci-matrix-edits");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setMatrix(parsed);
+      } catch {}
+    }
+  }, []);
+
+  // Clear any previous edits from localStorage on load
+  useEffect(() => {
+    localStorage.removeItem("raci-matrix-edits");
   }, []);
 
   const [personToResponsibilities, responsibilityToPeople, persons, responsibilities] = useMemo(
@@ -231,7 +305,7 @@ export default function RaciViewer() {
           </div>
         </nav>
       </header>
-      <main style={{ maxWidth: 900, margin: "32px auto 0 auto", padding: 24 }}>
+      <main style={{ maxWidth: 1100, margin: "32px auto 0 auto", padding: "24px 8px", width: "100%" }}>
         {mode === "dashboard" && (
           <DashboardSearch
             persons={persons}
