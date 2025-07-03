@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/RACI-Matrix/static/css/main.f855e6bc.css",
+    "main.js": "/RACI-Matrix/static/js/main.8ac4727c.js",
+    "static/js/453.9651b7f8.chunk.js": "/RACI-Matrix/static/js/453.9651b7f8.chunk.js",
+    "index.html": "/RACI-Matrix/index.html",
+    "main.f855e6bc.css.map": "/RACI-Matrix/static/css/main.f855e6bc.css.map",
+    "main.8ac4727c.js.map": "/RACI-Matrix/static/js/main.8ac4727c.js.map",
+    "453.9651b7f8.chunk.js.map": "/RACI-Matrix/static/js/453.9651b7f8.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f855e6bc.css",
+    "static/js/main.8ac4727c.js"
+  ]
+}
