@@ -230,14 +230,15 @@ export default function RaciViewer() {
         position: "sticky",
         top: 0,
         zIndex: 100,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        flexWrap: "wrap"
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "0 0 auto" }}>
           <img src={LOGO_URL} alt="Order Monkey Logo" style={{ height: 40, marginRight: 12 }} />
           <span style={{ fontSize: 28, fontWeight: 800, color: PRIMARY_COLOR, letterSpacing: 1 }}>RACI Matrix Viewer</span>
         </div>
-        <nav aria-label="Main navigation">
-          <div style={{ display: "flex", gap: 12 }}>
+        <nav aria-label="Main navigation" style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <button
               onClick={() => setMode("dashboard")}
               aria-current={mode === "dashboard"}
